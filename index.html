@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RestoBot AI - הזמנת מקום חכמה</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="container" style="min-height: 100vh; display: flex; flex-direction: column;">
+        <header class="animate-fade-in">
+            <nav class="glass"
+                style="margin: 20px; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-radius: 20px;">
+                <div class="logo"
+                    style="font-size: 1.8rem; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-utensils"></i>
+                    <span>RestoBot</span>
+                </div>
+                <div id="user-controls" class="nav-links" style="display: flex; gap: 15px; align-items: center;">
+                    <button id="login-btn" class="btn-primary" onclick="showAuth()">התחבר / הרשם</button>
+                    <div id="logged-in-area" style="display: none; align-items: center; gap: 15px;">
+                        <span id="user-greeting" style="font-weight: 600; color: var(--text-main);"></span>
+                        <button class="glass"
+                            style="padding: 8px 15px; border-radius: 12px; cursor: pointer; color: var(--primary); font-weight: 600;"
+                            onclick="showDashboard()">ההזמנות שלי</button>
+                        <button
+                            style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem;"
+                            onclick="handleLogout()">התנתק</button>
+                    </div>
+                </div>
+            </nav>
+        </header>
+
+        <!-- Auth Modal -->
+        <div id="auth-modal" class="modal-overlay">
+            <div class="glass modal-content animate-fade-in" style="border-radius: 30px;">
+                <div class="auth-tabs">
+                    <button class="auth-tab active" id="tab-login" onclick="toggleAuth('login')">התחברות</button>
+                    <button class="auth-tab" id="tab-signup" onclick="toggleAuth('signup')">הרשמה</button>
+                </div>
+
+                <div id="login-form">
+                    <input type="email" id="login-email" placeholder="אימייל">
+                    <input type="password" id="login-password" placeholder="סיסמה">
+                    <button class="btn-primary" style="width: 100%; margin-top: 15px;" onclick="handleLogin()">התחבר
+                        עכשיו</button>
+                </div>
+
+                <div id="signup-form" style="display: none;">
+                    <input type="text" id="signup-name" placeholder="שם מלא">
+                    <input type="email" id="signup-email" placeholder="אימייל">
+                    <input type="password" id="signup-password" placeholder="סיסמה">
+                    <button class="btn-primary" style="width: 100%; margin-top: 15px;" onclick="handleSignup()">צור
+                        חשבון</button>
+                </div>
+
+                <p style="margin-top: 25px; font-size: 0.9rem; color: var(--text-muted); cursor: pointer; transition: color 0.3s;"
+                    onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'"
+                    onclick="hideAuth()">סגור</p>
+            </div>
+        </div>
+
+        <!-- Dashboard Modal -->
+        <div id="dashboard-modal" class="modal-overlay">
+            <div class="glass modal-content animate-fade-in" style="max-width: 600px; border-radius: 30px;">
+                <h2 style="margin-bottom: 25px; color: var(--primary);">ההזמנות שלי</h2>
+                <div id="bookings-list" style="margin-bottom: 25px; text-align: right;">
+                    <p style="color: var(--text-muted);">עדיין לא ביצעת הזמנות...</p>
+                </div>
+                <button class="btn-primary" style="width: 100%;" onclick="hideDashboard()">סגור</button>
+            </div>
+        </div>
+
+        <main style="max-width: 1200px; margin: 0 auto; padding: 20px; flex: 1; display: flex; flex-direction: column;">
+            <section class="hero animate-slide-up" style="text-align: center; margin-bottom: 50px; padding: 40px 0;">
+                <h1 class="glow-text"
+                    style="font-size: 3.8rem; margin-bottom: 20px; color: var(--text-main); line-height: 1.1;">
+                    הזמינו שולחן <span style="color: var(--primary);">בקלות</span>
+                </h1>
+                <p style="font-size: 1.3rem; color: var(--text-muted); max-width: 600px; margin: 0 auto 40px;">הסוכן
+                    החכם שישריין לכם מקום בקליק במסעדות הכי שוות</p>
+                <button class="btn-primary" style="font-size: 1.2rem; padding: 18px 50px;" onclick="scrollToChat()">בואו
+                    נתחיל</button>
+            </section>
+
+            <section id="chat-container" class="glass animate-fade-in"
+                style="max-width: 850px; margin: 0 auto 40px; min-height: 600px; width: 100%; display: flex; flex-direction: column; overflow: hidden; border-radius: 30px;">
+                <div class="chat-header"
+                    style="padding: 25px; border-bottom: 1px solid var(--glass-border); background: rgba(249, 115, 22, 0.05); display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="display: flex; align-items: center; gap: 12px; color: var(--text-main);">
+                        <span
+                            style="width: 12px; height: 12px; background: #22c55e; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px #22c55e;"></span>
+                        סוכן הבוקינג של RestoBot
+                    </h3>
+                    <i class="fas fa-robot" style="color: var(--primary); font-size: 1.5rem;"></i>
+                </div>
+                <div id="chat-messages"
+                    style="flex: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; background: rgba(255, 255, 255, 0.5);">
+                    <!-- Messages will be added dynamically -->
+                </div>
+                <div class="chat-input-area" style="padding: 25px; background: white;">
+                    <div style="display: flex; gap: 15px;">
+                        <input type="text" id="user-input" placeholder="כתבו כאן"
+                            style="margin: 0; background: #f8fafc; border-radius: 15px; border: 1px solid #e2e8f0; padding: 15px 25px;">
+                        <button class="btn-primary" onclick="sendMessage()"
+                            style="padding: 0 30px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        function scrollToChat() {
+            document.getElementById('chat-container').scrollIntoView({ behavior: 'smooth' });
+        }
+        function showAuth() { document.getElementById('auth-modal').style.display = 'flex'; }
+        function hideAuth() { document.getElementById('auth-modal').style.display = 'none'; }
+        function toggleAuth(type) {
+            document.getElementById('login-form').style.display = type === 'login' ? 'block' : 'none';
+            document.getElementById('signup-form').style.display = type === 'signup' ? 'block' : 'none';
+            document.getElementById('tab-login').classList.toggle('active', type === 'login');
+            document.getElementById('tab-signup').classList.toggle('active', type === 'signup');
+        }
+        function showDashboard() { document.getElementById('dashboard-modal').style.display = 'flex'; loadBookings(); }
+        function hideDashboard() { document.getElementById('dashboard-modal').style.display = 'none'; }
+    </script>
+</body>
+
+</html>
