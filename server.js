@@ -76,7 +76,7 @@ app.post('/api/send-confirmation', async (req, res) => {
                 'Authorization': `Bearer ${RESEND_API_KEY}`
             },
             body: JSON.stringify({
-                from: 'onboarding@resend.dev',
+                from: 'restobot@resend.dev',
                 to: email,
                 subject: 'אישור הזמנה - RestoBot',
                 html: `
