@@ -1,10 +1,16 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 8080;
+
+const supabase = createClient(
+    process.env.VITE_SUPABASE_URL,
+    process.env.VITE_SUPABASE_ANON_KEY
+);
 
 app.use(cors());
 app.use(express.json());
@@ -14,50 +20,60 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-const fs = require('fs');
-
-// Helper to read/write JSON files
-const db = {
-    read: (file) => {
-        const p = path.join(__dirname, 'data', file);
-        if (!fs.existsSync(p)) {
-            if (!fs.existsSync(path.join(__dirname, 'data'))) {
-                fs.mkdirSync(path.join(__dirname, 'data'));
-            }
-            fs.writeFileSync(p, '[]');
-        }
-        return JSON.parse(fs.readFileSync(p, 'utf8') || '[]');
-    },
-    write: (file, data) => {
-        if (!fs.existsSync(path.join(__dirname, 'data'))) {
-            fs.mkdirSync(path.join(__dirname, 'data'));
-        }
-        fs.writeFileSync(path.join(__dirname, 'data', file), JSON.stringify(data, null, 2));
-    }
-};
-
-app.post('/api/signup', (req, res) => {
+app.post('/api/signup', async (req, res) => {
     const { name, email, password } = req.body;
-    const users = db.read('users.json');
-    if (users.find(u => u.email === email)) return res.json({ success: false, message: 'האימייל כבר קיים' });
-    users.push({ name, email, password });
-    db.write('users.json', users);
+
+    const { data: existingUser } = await supabase
+        .from('users')
+        .select('email')
+        .eq('email', email)
+        .maybeSingle();
+
+    if (existingUser) {
+        return res.json({ success: false, message: 'האימייל כבר קיים' });
+    }
+
+    const { error } = await supabase
+        .from('users')
+        .insert([{ name, email, password }]);
+
+    if (error) {
+        return res.json({ success: false, message: 'שגיאה ביצירת חשבון' });
+    }
+
     res.json({ success: true });
 });
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
-    const users = db.read('users.json');
-    const user = users.find(u => u.email === email && u.password === password);
-    if (!user) return res.json({ success: false, message: 'אימייל או סיסמה לא נכונים' });
+
+    const { data: user } = await supabase
+        .from('users')
+        .select('name, email')
+        .eq('email', email)
+        .eq('password', password)
+        .maybeSingle();
+
+    if (!user) {
+        return res.json({ success: false, message: 'אימייל או סיסמה לא נכונים' });
+    }
+
     res.json({ success: true, user: { name: user.name, email: user.email } });
 });
 
-app.get('/api/bookings', (req, res) => {
+app.get('/api/bookings', async (req, res) => {
     const { email } = req.query;
-    const bookings = db.read('bookings.json');
-    const userBookings = bookings.filter(b => b.userEmail === email);
-    res.json({ bookings: userBookings });
+
+    const { data: bookings, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('user_email', email);
+
+    if (error) {
+        return res.json({ bookings: [] });
+    }
+
+    res.json({ bookings: bookings || [] });
 });
 
 app.post('/api/send-confirmation', async (req, res) => {
@@ -99,6 +115,17 @@ app.post('/api/send-confirmation', async (req, res) => {
         const data = await response.json();
         if (response.ok) {
             console.log(`SUCCESS! Resend ID: ${data.id}`);
+
+            await supabase
+                .from('bookings')
+                .insert([{
+                    user_email: email,
+                    restaurant,
+                    date,
+                    people,
+                    name
+                }]);
+
             res.json({ success: true, id: data.id });
         } else {
             console.error('[Email] Resend API Error:', JSON.stringify(data, null, 2));
@@ -110,7 +137,11 @@ app.post('/api/send-confirmation', async (req, res) => {
     }
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`\n🚀 RestoBot Server started on http://localhost:${PORT}`);
-    console.log(`Ready to handle email confirmations.`);
-});
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`\n🚀 RestoBot Server started on http://localhost:${PORT}`);
+        console.log(`Ready to handle email confirmations.`);
+    });
+}
+
+module.exports = app;
