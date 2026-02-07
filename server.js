@@ -62,7 +62,7 @@ app.get('/api/bookings', (req, res) => {
 
 app.post('/api/send-confirmation', async (req, res) => {
     const { email, restaurant, date, people, name } = req.body;
-    const RESEND_API_KEY = "re_7k81F58m_8uBpZayFKpMbCecBm2rhkyj8";
+    const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
     console.log(`\n--- NEW EMAIL REQUEST: ${new Date().toISOString()} ---`);
     console.log(`Target: ${email}`);
